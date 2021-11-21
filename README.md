@@ -1,2 +1,3 @@
 # BlackKingBar
-a distribute k-v storge
+A distribute k-v storge.
+Practice raft and golang
