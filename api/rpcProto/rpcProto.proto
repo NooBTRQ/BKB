@@ -1,0 +1,22 @@
+// raft 集群间rpc协议
+
+syntax = "proto3";
+option go_package ="./;rpcProto";
+package rpcProto;
+
+service election {
+
+  rpc RequestVote (VoteReq) returns (VoteRes) {}
+}
+
+message VoteReq {
+  int64 term = 1;
+  int32 candidate = 2;
+  int64 lastLogIndex = 3;
+  int64 lastLogTerm = 4;
+}
+
+message VoteRes {
+  int64 term = 1;
+  bool voteGranted = 2;
+}

@@ -1,4 +1,6 @@
-package main
+package cmd
+
+// raft状态机
 
 const (
 	Follower  = 0
@@ -29,10 +31,4 @@ func GetSingleton() *StateMachine {
 	}
 
 	return ins
-}
-
-func (*StateMachine) Start() {
-
-	//监听端口
-
 }
