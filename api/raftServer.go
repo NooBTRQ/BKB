@@ -24,7 +24,6 @@ func StartRpc() error {
 		log.Fatal("服务监听端口失败", err)
 	}
 
-	// 4. 运行rpcServer，传入listener
 	return rpcServer.Serve(listener)
 }
 
