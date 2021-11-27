@@ -11,7 +11,7 @@ service election {
 
 message VoteReq {
   int64 term = 1;
-  int32 candidate = 2;
+  int32 candidateId = 2;
   int64 lastLogIndex = 3;
   int64 lastLogTerm = 4;
 }

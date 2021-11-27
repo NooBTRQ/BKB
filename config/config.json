@@ -1,0 +1,20 @@
+{
+    "httpIP" : "127.0.0.1",
+    "httpPort" : "8081",
+    "rpcIP" : "127.0.0.1",
+    "rpcPort" : "8082",
+    "clusterMember" : [
+        {
+            "rpcIP" : "127.0.0.1",
+            "rpcPort" : "8082"
+        },
+        {
+            "rpcIP" : "127.0.0.1",
+            "rpcPort" : "8082"
+        },
+        {
+            "rpcIP" : "127.0.0.1",
+            "rpcPort" : "8082"
+        }
+    ]
+}

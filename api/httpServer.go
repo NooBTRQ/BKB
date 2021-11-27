@@ -2,6 +2,7 @@
 package apiServer
 
 import (
+	"BlackKingBar/config"
 	"net/http"
 )
 
@@ -9,7 +10,8 @@ func StartHttp() error {
 
 	http.HandleFunc("/Set", setHandle)
 	http.HandleFunc("/Get", getHandle)
-	return http.ListenAndServe("127.0.0.1:8081", nil)
+	cfg := config.CfgInstance
+	return http.ListenAndServe(cfg.HttpIP+":"+cfg.HttpPort, nil)
 }
 
 func setHandle(w http.ResponseWriter, r *http.Request) {

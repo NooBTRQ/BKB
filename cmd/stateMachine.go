@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"BlackKingBar/config"
 	"math/rand"
 	"time"
 )
@@ -27,23 +28,21 @@ type StateMachine struct {
 	ElectionTimer         *time.Timer
 }
 
-var ins *StateMachine
+var MachineInstance *StateMachine
 
-func GetSingleton() *StateMachine {
+func InitStateMachine() error {
 
-	if ins == nil {
+	cfg := config.CfgInstance
+	MachineInstance = &StateMachine{}
+	MachineInstance.CurrentTerm = 0
+	MachineInstance.ElectionTimerDuration = rand.Intn(150) + 150
+	MachineInstance.State = Follower
+	MachineInstance.ElectionTimer = time.NewTimer(time.Millisecond * time.Duration(MachineInstance.ElectionTimerDuration))
+	MachineInstance.CandicateId = cfg.CandicateId
+	for _ = range MachineInstance.ElectionTimer.C {
 
-		ins = &StateMachine{}
-		ins.CurrentTerm = 0
-		ins.ElectionTimerDuration = rand.Intn(150) + 150
-		ins.State = Follower
-		ins.ElectionTimer = time.NewTimer(time.Millisecond * time.Duration(ins.ElectionTimerDuration))
-
-		for _ = range ins.ElectionTimer.C {
-
-			ins.election()
-		}
+		go MachineInstance.StartElection()
 	}
 
-	return ins
+	return nil
 }
