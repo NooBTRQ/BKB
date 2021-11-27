@@ -6,7 +6,6 @@ import (
 	"BlackKingBar/cmd"
 	"BlackKingBar/config"
 	"context"
-	"log"
 	"net"
 
 	"github.com/copier"
@@ -26,7 +25,7 @@ func StartRpc() error {
 
 	listener, err := net.Listen("tcp", cfg.HttpIP+":"+cfg.RpcPort)
 	if err != nil {
-		log.Fatal("服务监听端口失败", err)
+		return err
 	}
 
 	return rpcServer.Serve(listener)

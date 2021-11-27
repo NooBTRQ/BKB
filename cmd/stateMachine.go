@@ -15,17 +15,22 @@ const (
 )
 
 type StateMachine struct {
-	CandicateId           int
+	CandidateId           int
 	State                 int
 	CurrentTerm           int
 	VoteFor               int
-	Log                   []int
+	Log                   []RaftLog
 	CommitIndex           int
 	LastApplied           int
 	NextIndex             []int
 	MatchIndex            []int
-	ElectionTimerDuration int
+	ElectionTimerDuration time.Duration
 	ElectionTimer         *time.Timer
+}
+
+type RaftLog struct {
+	Term  int
+	Index int
 }
 
 var MachineInstance *StateMachine
@@ -35,10 +40,11 @@ func InitStateMachine() error {
 	cfg := config.CfgInstance
 	MachineInstance = &StateMachine{}
 	MachineInstance.CurrentTerm = 0
-	MachineInstance.ElectionTimerDuration = rand.Intn(150) + 150
+	MachineInstance.ElectionTimerDuration = time.Duration(rand.Intn(150)+150) * time.Millisecond
 	MachineInstance.State = Follower
-	MachineInstance.ElectionTimer = time.NewTimer(time.Millisecond * time.Duration(MachineInstance.ElectionTimerDuration))
-	MachineInstance.CandicateId = cfg.CandicateId
+	MachineInstance.ElectionTimer = time.NewTimer(MachineInstance.ElectionTimerDuration)
+	MachineInstance.CandidateId = cfg.CandidateId
+	MachineInstance.Log = make([]RaftLog, 0)
 	for _ = range MachineInstance.ElectionTimer.C {
 
 		go MachineInstance.StartElection()

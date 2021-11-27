@@ -10,7 +10,7 @@ type Config struct {
 	HttpPort      string
 	RpcIP         string
 	RpcPort       string
-	CandicateId   int
+	CandidateId   int
 	ClusterMember []Config
 }
 
