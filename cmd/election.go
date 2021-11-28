@@ -4,6 +4,8 @@ import (
 	"BlackKingBar/api/rpcProto"
 	"BlackKingBar/config"
 	"BlackKingBar/infrastructure"
+	"fmt"
+	"strconv"
 	"sync"
 )
 
@@ -15,73 +17,70 @@ type VoteRequest struct {
 }
 
 type VoteResponse struct {
-	Term       int
-	VoteGanted bool
+	Term        int
+	VoteGranted bool
 }
 
 func (m *StateMachine) StartElection() {
-	m.State = Candidate
-	m.CurrentTerm++
-	m.VoteFor = m.CandidateId
-	m.ElectionTimer.Stop()
+
+	m.BecomeCandicate()
 
 	var wg sync.WaitGroup
 	var voteCount int
 	var lock sync.Mutex
 	cfg := config.CfgInstance
-	wg.Add(len(cfg.ClusterMember))
+	wg.Add(len(cfg.ClusterMembers))
 	//给其它节点发送voteRequest
-	for _, node := range cfg.ClusterMember {
-		go func() {
+	for _, node := range cfg.ClusterMembers {
+		go func(node config.ClusterMember) {
 			rpcRequest := &rpcProto.VoteReq{}
-			rpcRequest.CandidateId = int32(m.CandidateId)
+			rpcRequest.CandidateId = int64(m.CandidateId)
 			rpcRequest.Term = int64(m.CurrentTerm)
 			if len(m.Log) > 0 {
 				rpcRequest.LastLogTerm = int64(m.Log[len(m.Log)-1].Term)
 				rpcRequest.LastLogIndex = int64(m.Log[len(m.Log)-1].Index)
 			}
 			res, err := infrastructure.SendVoteRequest(rpcRequest, node.RpcIP, node.RpcPort)
-
 			if err == nil && res.VoteGranted {
 				lock.Lock()
 				voteCount++
 				lock.Unlock()
 			}
-		}()
+
+			wg.Done()
+		}(node)
 	}
 
 	wg.Wait()
+	fmt.Println("收到票数：" + strconv.FormatInt(int64(voteCount), 10))
+	if voteCount > len(cfg.ClusterMembers)/2 {
 
-	if voteCount > len(cfg.ClusterMember)/2 {
-
-		m.State = Leader
+		m.BecomeLeader()
 	}
 }
 
 func (m *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, error) {
-
 	res := &VoteResponse{}
 	var err error
 	if request.Term < m.CurrentTerm {
 		res.Term = m.CurrentTerm
 
-	} else if request.Term > m.CurrentTerm {
-		m.State = Follower
-		m.VoteFor = m.CandidateId
+	} else if request.Term >= m.CurrentTerm {
+		fmt.Println("已投票,candidateId:" + strconv.FormatInt(int64(request.CandidateId), 10))
+		m.VoteFor = request.CandidateId
 		res.Term = request.Term
-		res.VoteGanted = true
-		//持久化状态
-		//重置定时器
-		_ = m.ElectionTimer.Reset(m.ElectionTimerDuration)
+		res.VoteGranted = true
+
 		return res, nil
-	} else if (m.VoteFor == 0 || m.VoteFor == request.CandidateId) && (len(m.Log) == 0 || (m.Log[len(m.Log)].Term <= request.LastLogTerm && m.Log[len(m.Log)].Index <= request.LastLogIndex)) {
-		m.State = Follower
+	} //else
+
+	if (m.VoteFor == 0 || m.VoteFor == request.CandidateId) && (len(m.Log) == 0 || (m.Log[len(m.Log)].Term <= request.LastLogTerm && m.Log[len(m.Log)].Index <= request.LastLogIndex)) {
+
 		m.VoteFor = m.CandidateId
 		res.Term = request.Term
-		res.VoteGanted = true
-		//持久化状态
-		//重置定时器
-		_ = m.ElectionTimer.Reset(m.ElectionTimerDuration)
+		res.VoteGranted = true
+
+		m.BecomeFollower()
 	}
 
 	return res, err

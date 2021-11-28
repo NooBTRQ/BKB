@@ -6,7 +6,9 @@ import (
 	"BlackKingBar/cmd"
 	"BlackKingBar/config"
 	"context"
+	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/copier"
 	"google.golang.org/grpc"
@@ -36,17 +38,10 @@ func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq)
 	machine := cmd.MachineInstance
 	req := &cmd.VoteRequest{}
 	copier.Copy(req, request)
-	//req.Term = int(request.Term)
-	//req.CandicateId = int(request.Candidate)
-	//req.LastLogTerm = int(request.LastLogTerm)
-	//req.LastLogIndex = int(request.LastLogIndex)
-
+	fmt.Println("收到投票请求,candidateId:" + strconv.FormatInt(int64(req.CandidateId), 10))
 	res, err := machine.HandleElection(req)
-
 	resPonse := &rpcProto.VoteRes{}
 	copier.Copy(resPonse, res)
-	//resPonse.Term = int64(res.Term)
-	//resPonse.VoteGranted = res.VoteGanted
 
 	return resPonse, err
 }

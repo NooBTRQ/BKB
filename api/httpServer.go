@@ -15,9 +15,9 @@ func StartHttp() error {
 }
 
 func setHandle(w http.ResponseWriter, r *http.Request) {
-
+	w.Write([]byte("hello world!"))
 }
 
 func getHandle(w http.ResponseWriter, r *http.Request) {
-
+	w.Write([]byte("hello world!"))
 }
