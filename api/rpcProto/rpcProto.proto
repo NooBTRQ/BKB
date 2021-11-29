@@ -9,6 +9,10 @@ service election {
   rpc RequestVote (VoteReq) returns (VoteRes) {}
 }
 
+service replicate {
+  rpc AppendEntries (AppendReq) returns (AppendRes) {}
+}
+
 message VoteReq {
   int64 term = 1;
   int64 candidateId = 2;
@@ -19,4 +23,23 @@ message VoteReq {
 message VoteRes {
   int64 term = 1;
   bool voteGranted = 2;
+}
+
+message AppendReq {
+  int64 term=1;
+  int64 leaderId=2;
+  int64 prevLogTerm=3;
+  int64 prevLogIndex=4;
+  int64 leaderCommit=5;
+  repeated logEntry entries =6;
+}
+
+message AppendRes {
+  int64 term=1;
+  bool success=2;
+}
+
+message logEntry {
+  int64 term=1;
+  int64 index=2;
 }

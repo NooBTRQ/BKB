@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"BlackKingBar/api/rpcProto"
-	"BlackKingBar/config"
 	"BlackKingBar/infrastructure"
 	"fmt"
 	"strconv"
@@ -28,11 +27,11 @@ func (m *StateMachine) StartElection() {
 	var wg sync.WaitGroup
 	var voteCount int
 	var lock sync.Mutex
-	cfg := config.CfgInstance
+	cfg := infrastructure.CfgInstance
 	wg.Add(len(cfg.ClusterMembers))
 	//给其它节点发送voteRequest
 	for _, node := range cfg.ClusterMembers {
-		go func(node config.ClusterMember) {
+		go func(node infrastructure.ClusterMember) {
 			rpcRequest := &rpcProto.VoteReq{}
 			rpcRequest.CandidateId = int64(m.CandidateId)
 			rpcRequest.Term = int64(m.CurrentTerm)
@@ -60,6 +59,7 @@ func (m *StateMachine) StartElection() {
 }
 
 func (m *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, error) {
+	m.ElectionTimer.Reset(m.ElectionTimeout)
 	res := &VoteResponse{}
 	var err error
 	if request.Term < m.CurrentTerm {
@@ -79,8 +79,6 @@ func (m *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, erro
 		m.VoteFor = m.CandidateId
 		res.Term = request.Term
 		res.VoteGranted = true
-
-		m.BecomeFollower()
 	}
 
 	return res, err

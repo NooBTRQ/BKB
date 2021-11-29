@@ -22,7 +22,7 @@ func StartRpc() error {
 	rpcServer := grpc.NewServer()
 	s := RaftServer{}
 	rpcProto.RegisterElectionServer(rpcServer, &s)
-
+	rpcProto.RegisterReplicateServer(rpcServer, &s)
 	cfg := config.CfgInstance
 
 	listener, err := net.Listen("tcp", cfg.HttpIP+":"+cfg.RpcPort)
@@ -44,4 +44,9 @@ func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq)
 	copier.Copy(resPonse, res)
 
 	return resPonse, err
+}
+
+func (s *RaftServer) AppendEntries(ctx context.Context, request *rpcProto.AppendReq) (*rpcProto.AppendRes, error) {
+
+	return &rpcProto.AppendRes{}, nil
 }

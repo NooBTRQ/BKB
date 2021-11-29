@@ -152,6 +152,203 @@ func (x *VoteRes) GetVoteGranted() bool {
 	return false
 }
 
+type AppendReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Term         int64       `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	LeaderId     int64       `protobuf:"varint,2,opt,name=leaderId,proto3" json:"leaderId,omitempty"`
+	PrevLogTerm  int64       `protobuf:"varint,3,opt,name=prevLogTerm,proto3" json:"prevLogTerm,omitempty"`
+	PrevLogIndex int64       `protobuf:"varint,4,opt,name=prevLogIndex,proto3" json:"prevLogIndex,omitempty"`
+	LeaderCommit int64       `protobuf:"varint,5,opt,name=leaderCommit,proto3" json:"leaderCommit,omitempty"`
+	Entries      []*LogEntry `protobuf:"bytes,6,rep,name=entries,proto3" json:"entries,omitempty"`
+}
+
+func (x *AppendReq) Reset() {
+	*x = AppendReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rpcProto_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AppendReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendReq) ProtoMessage() {}
+
+func (x *AppendReq) ProtoReflect() protoreflect.Message {
+	mi := &file_rpcProto_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendReq.ProtoReflect.Descriptor instead.
+func (*AppendReq) Descriptor() ([]byte, []int) {
+	return file_rpcProto_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AppendReq) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *AppendReq) GetLeaderId() int64 {
+	if x != nil {
+		return x.LeaderId
+	}
+	return 0
+}
+
+func (x *AppendReq) GetPrevLogTerm() int64 {
+	if x != nil {
+		return x.PrevLogTerm
+	}
+	return 0
+}
+
+func (x *AppendReq) GetPrevLogIndex() int64 {
+	if x != nil {
+		return x.PrevLogIndex
+	}
+	return 0
+}
+
+func (x *AppendReq) GetLeaderCommit() int64 {
+	if x != nil {
+		return x.LeaderCommit
+	}
+	return 0
+}
+
+func (x *AppendReq) GetEntries() []*LogEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+type AppendRes struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Term    int64 `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	Success bool  `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+}
+
+func (x *AppendRes) Reset() {
+	*x = AppendRes{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rpcProto_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *AppendRes) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendRes) ProtoMessage() {}
+
+func (x *AppendRes) ProtoReflect() protoreflect.Message {
+	mi := &file_rpcProto_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendRes.ProtoReflect.Descriptor instead.
+func (*AppendRes) Descriptor() ([]byte, []int) {
+	return file_rpcProto_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AppendRes) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *AppendRes) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type LogEntry struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Term  int64 `protobuf:"varint,1,opt,name=term,proto3" json:"term,omitempty"`
+	Index int64 `protobuf:"varint,2,opt,name=index,proto3" json:"index,omitempty"`
+}
+
+func (x *LogEntry) Reset() {
+	*x = LogEntry{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rpcProto_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *LogEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogEntry) ProtoMessage() {}
+
+func (x *LogEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_rpcProto_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogEntry.ProtoReflect.Descriptor instead.
+func (*LogEntry) Descriptor() ([]byte, []int) {
+	return file_rpcProto_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LogEntry) GetTerm() int64 {
+	if x != nil {
+		return x.Term
+	}
+	return 0
+}
+
+func (x *LogEntry) GetIndex() int64 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
 var File_rpcProto_proto protoreflect.FileDescriptor
 
 var file_rpcProto_proto_rawDesc = []byte{
@@ -169,12 +366,37 @@ var file_rpcProto_proto_rawDesc = []byte{
 	0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x74, 0x65, 0x72,
 	0x6d, 0x12, 0x20, 0x0a, 0x0b, 0x76, 0x6f, 0x74, 0x65, 0x47, 0x72, 0x61, 0x6e, 0x74, 0x65, 0x64,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x76, 0x6f, 0x74, 0x65, 0x47, 0x72, 0x61, 0x6e,
-	0x74, 0x65, 0x64, 0x32, 0x41, 0x0a, 0x08, 0x65, 0x6c, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12,
-	0x35, 0x0a, 0x0b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x11,
-	0x2e, 0x72, 0x70, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65,
-	0x71, 0x1a, 0x11, 0x2e, 0x72, 0x70, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x56, 0x6f, 0x74,
-	0x65, 0x52, 0x65, 0x73, 0x22, 0x00, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2f, 0x3b, 0x72, 0x70, 0x63,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x65, 0x64, 0x22, 0xd3, 0x01, 0x0a, 0x09, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x52, 0x65,
+	0x71, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x1a, 0x0a, 0x08, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x49,
+	0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x6c, 0x65, 0x61, 0x64, 0x65, 0x72, 0x49,
+	0x64, 0x12, 0x20, 0x0a, 0x0b, 0x70, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54, 0x65, 0x72, 0x6d,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0b, 0x70, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x54,
+	0x65, 0x72, 0x6d, 0x12, 0x22, 0x0a, 0x0c, 0x70, 0x72, 0x65, 0x76, 0x4c, 0x6f, 0x67, 0x49, 0x6e,
+	0x64, 0x65, 0x78, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x70, 0x72, 0x65, 0x76, 0x4c,
+	0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x22, 0x0a, 0x0c, 0x6c, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x03, 0x52, 0x0c, 0x6c,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x12, 0x2c, 0x0a, 0x07, 0x65,
+	0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x72,
+	0x70, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x6c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x52, 0x07, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x22, 0x39, 0x0a, 0x09, 0x41, 0x70, 0x70,
+	0x65, 0x6e, 0x64, 0x52, 0x65, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x12, 0x18, 0x0a, 0x07, 0x73, 0x75,
+	0x63, 0x63, 0x65, 0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x73, 0x75, 0x63,
+	0x63, 0x65, 0x73, 0x73, 0x22, 0x34, 0x0a, 0x08, 0x6c, 0x6f, 0x67, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x12, 0x12, 0x0a, 0x04, 0x74, 0x65, 0x72, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04,
+	0x74, 0x65, 0x72, 0x6d, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x32, 0x41, 0x0a, 0x08, 0x65, 0x6c,
+	0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x35, 0x0a, 0x0b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x56, 0x6f, 0x74, 0x65, 0x12, 0x11, 0x2e, 0x72, 0x70, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65, 0x71, 0x1a, 0x11, 0x2e, 0x72, 0x70, 0x63, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x2e, 0x56, 0x6f, 0x74, 0x65, 0x52, 0x65, 0x73, 0x22, 0x00, 0x32, 0x48, 0x0a,
+	0x09, 0x72, 0x65, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x65, 0x12, 0x3b, 0x0a, 0x0d, 0x41, 0x70,
+	0x70, 0x65, 0x6e, 0x64, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x12, 0x13, 0x2e, 0x72, 0x70,
+	0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x52, 0x65, 0x71,
+	0x1a, 0x13, 0x2e, 0x72, 0x70, 0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x41, 0x70, 0x70, 0x65,
+	0x6e, 0x64, 0x52, 0x65, 0x73, 0x22, 0x00, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2f, 0x3b, 0x72, 0x70,
+	0x63, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -189,19 +411,25 @@ func file_rpcProto_proto_rawDescGZIP() []byte {
 	return file_rpcProto_proto_rawDescData
 }
 
-var file_rpcProto_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_rpcProto_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_rpcProto_proto_goTypes = []interface{}{
-	(*VoteReq)(nil), // 0: rpcProto.VoteReq
-	(*VoteRes)(nil), // 1: rpcProto.VoteRes
+	(*VoteReq)(nil),   // 0: rpcProto.VoteReq
+	(*VoteRes)(nil),   // 1: rpcProto.VoteRes
+	(*AppendReq)(nil), // 2: rpcProto.AppendReq
+	(*AppendRes)(nil), // 3: rpcProto.AppendRes
+	(*LogEntry)(nil),  // 4: rpcProto.logEntry
 }
 var file_rpcProto_proto_depIdxs = []int32{
-	0, // 0: rpcProto.election.RequestVote:input_type -> rpcProto.VoteReq
-	1, // 1: rpcProto.election.RequestVote:output_type -> rpcProto.VoteRes
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: rpcProto.AppendReq.entries:type_name -> rpcProto.logEntry
+	0, // 1: rpcProto.election.RequestVote:input_type -> rpcProto.VoteReq
+	2, // 2: rpcProto.replicate.AppendEntries:input_type -> rpcProto.AppendReq
+	1, // 3: rpcProto.election.RequestVote:output_type -> rpcProto.VoteRes
+	3, // 4: rpcProto.replicate.AppendEntries:output_type -> rpcProto.AppendRes
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_rpcProto_proto_init() }
@@ -234,6 +462,42 @@ func file_rpcProto_proto_init() {
 				return nil
 			}
 		}
+		file_rpcProto_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AppendReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rpcProto_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AppendRes); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rpcProto_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*LogEntry); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -241,9 +505,9 @@ func file_rpcProto_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rpcProto_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   5,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_rpcProto_proto_goTypes,
 		DependencyIndexes: file_rpcProto_proto_depIdxs,
@@ -329,6 +593,78 @@ var _Election_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestVote",
 			Handler:    _Election_RequestVote_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpcProto.proto",
+}
+
+// ReplicateClient is the client API for Replicate service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ReplicateClient interface {
+	AppendEntries(ctx context.Context, in *AppendReq, opts ...grpc.CallOption) (*AppendRes, error)
+}
+
+type replicateClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewReplicateClient(cc grpc.ClientConnInterface) ReplicateClient {
+	return &replicateClient{cc}
+}
+
+func (c *replicateClient) AppendEntries(ctx context.Context, in *AppendReq, opts ...grpc.CallOption) (*AppendRes, error) {
+	out := new(AppendRes)
+	err := c.cc.Invoke(ctx, "/rpcProto.replicate/AppendEntries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ReplicateServer is the server API for Replicate service.
+type ReplicateServer interface {
+	AppendEntries(context.Context, *AppendReq) (*AppendRes, error)
+}
+
+// UnimplementedReplicateServer can be embedded to have forward compatible implementations.
+type UnimplementedReplicateServer struct {
+}
+
+func (*UnimplementedReplicateServer) AppendEntries(context.Context, *AppendReq) (*AppendRes, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AppendEntries not implemented")
+}
+
+func RegisterReplicateServer(s *grpc.Server, srv ReplicateServer) {
+	s.RegisterService(&_Replicate_serviceDesc, srv)
+}
+
+func _Replicate_AppendEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReplicateServer).AppendEntries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcProto.replicate/AppendEntries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReplicateServer).AppendEntries(ctx, req.(*AppendReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Replicate_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "rpcProto.replicate",
+	HandlerType: (*ReplicateServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AppendEntries",
+			Handler:    _Replicate_AppendEntries_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

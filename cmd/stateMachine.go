@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"BlackKingBar/config"
+	"BlackKingBar/infrastructure"
 	"fmt"
 	"math/rand"
 	"time"
@@ -16,31 +16,26 @@ const (
 )
 
 type StateMachine struct {
-	CandidateId            int
-	State                  int
-	CurrentTerm            int
-	VoteFor                int
-	Log                    []RaftLog
-	CommitIndex            int
-	LastApplied            int
-	NextIndex              []int
-	MatchIndex             []int
-	ElectionTimerDuration  time.Duration
-	HeartBeatTimerDuration time.Duration
-	ElectionTimer          *time.Ticker
-	HeartBeatTimer         *time.Ticker
-}
-
-type RaftLog struct {
-	Term  int
-	Index int
+	CandidateId       int
+	State             int
+	CurrentTerm       int
+	VoteFor           int
+	CommitIndex       int
+	LastApplied       int
+	NextIndex         []int
+	MatchIndex        []int
+	Log               []RaftLog
+	ElectionTimeout   time.Duration
+	HeartBeatDuration time.Duration
+	ElectionTimer     *time.Ticker
+	HeartBeatTimer    *time.Ticker
 }
 
 var MachineInstance *StateMachine
 
 func InitStateMachine() error {
 
-	cfg := config.CfgInstance
+	cfg := infrastructure.CfgInstance
 	MachineInstance = &StateMachine{}
 	MachineInstance.CandidateId = cfg.CandidateId
 
@@ -56,8 +51,8 @@ func (m *StateMachine) BecomeFollower() {
 	fmt.Println(time.Now())
 	fmt.Println("成为follower")
 	m.State = Follower
-	m.ElectionTimerDuration = time.Duration(rand.Intn(15)+15) * time.Second
-	m.ElectionTimer = time.NewTicker(m.ElectionTimerDuration)
+	m.ElectionTimeout = time.Duration(rand.Intn(150)+150) * time.Millisecond
+	m.ElectionTimer = time.NewTicker(m.ElectionTimeout)
 	m.stopHeartBeat()
 	go func() {
 		for {
@@ -80,8 +75,15 @@ func (m *StateMachine) BecomeLeader() {
 	fmt.Println("成为leader")
 	m.State = Leader
 	m.ElectionTimer.Stop()
-	m.HeartBeatTimerDuration = time.Duration(50) * time.Millisecond
-	m.HeartBeatTimer = time.NewTicker(m.HeartBeatTimerDuration)
+	m.HeartBeatDuration = time.Duration(50) * time.Millisecond
+	m.HeartBeatTimer = time.NewTicker(m.HeartBeatDuration)
+
+	go func() {
+		for {
+			<-m.HeartBeatTimer.C
+			m.SendHeartBeat()
+		}
+	}()
 }
 
 func (m *StateMachine) stopHeartBeat() {

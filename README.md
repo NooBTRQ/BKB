@@ -2,8 +2,12 @@
 A distribute k-v storge.
 Practice raft and golang
 
-1.copier性能待测试
-2.error重新设计
-3.缺少member change功能
-4.对象int类型斟酌
-5.选举timer、超时时间合理设置
+main function:
+1.election ✔
+2.logReplicate
+3.k-v storge
+4.member change
+5.log compaction
+
+
+2021-11-28 完成选举相关逻辑
