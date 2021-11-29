@@ -42,7 +42,7 @@ func InitStateMachine() error {
 	//从持久化文件中读取
 	MachineInstance.Log = make([]RaftLog, 0)
 	MachineInstance.CurrentTerm = 0
-	//
+	//服务启动时状态为follower
 	MachineInstance.BecomeFollower()
 	return nil
 }
