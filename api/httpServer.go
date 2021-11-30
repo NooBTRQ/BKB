@@ -2,7 +2,7 @@
 package apiServer
 
 import (
-	"BlackKingBar/config"
+	"BlackKingBar/infrastructure"
 	"net/http"
 )
 
@@ -10,7 +10,7 @@ func StartHttp() error {
 
 	http.HandleFunc("/Set", setHandle)
 	http.HandleFunc("/Get", getHandle)
-	cfg := config.CfgInstance
+	cfg := infrastructure.CfgInstance
 	return http.ListenAndServe(cfg.HttpIP+":"+cfg.HttpPort, nil)
 }
 

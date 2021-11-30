@@ -6,12 +6,14 @@ import (
 )
 
 type Config struct {
-	HttpIP         string
-	HttpPort       string
-	RpcIP          string
-	RpcPort        string
-	CandidateId    int
-	ClusterMembers []ClusterMember
+	HttpIP            string
+	HttpPort          string
+	RpcIP             string
+	RpcPort           string
+	CandidateId       int
+	ElectionTimeout   int
+	HeartBeatDuration int
+	ClusterMembers    []ClusterMember
 }
 
 type ClusterMember struct {

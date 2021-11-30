@@ -22,6 +22,15 @@ func SendVoteRequest(req *rpcProto.VoteReq, rpcIp, rpcPort string) (*rpcProto.Vo
 	return res, err
 }
 
-func SendLogReplicate() {
+func SendLogReplicate(req *rpcProto.AppendReq, rpcIp, rpcPort string) (*rpcProto.AppendRes, error) {
+	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(50*time.Millisecond)))
+	conn, err := grpc.DialContext(ctx, rpcIp+":"+rpcPort, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
 
+	client := rpcProto.NewReplicateClient(conn)
+	res, err := client.AppendEntries(ctx, req)
+	return res, err
 }
