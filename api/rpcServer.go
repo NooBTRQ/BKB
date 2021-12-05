@@ -17,6 +17,8 @@ import (
 type RaftServer struct {
 }
 
+var rpcServer *grpc.Server
+
 func StartRpc() error {
 
 	rpcServer := grpc.NewServer()
@@ -29,8 +31,11 @@ func StartRpc() error {
 	if err != nil {
 		return err
 	}
-
 	return rpcServer.Serve(listener)
+}
+
+func StopRpc() {
+	rpcServer.Stop()
 }
 
 func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq) (*rpcProto.VoteRes, error) {
@@ -38,7 +43,7 @@ func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq)
 	raft := app.Raft
 	req := &app.VoteRequest{}
 	copier.Copy(req, request)
-	fmt.Println("收到投票请求,candidateId:" + strconv.FormatInt(int64(req.CandidateId), 10))
+	fmt.Println("收到投票请求,candidateId:" + strconv.FormatInt(int64(req.CandidateId), 10) + "termId:" + strconv.FormatInt(int64(req.Term), 10))
 	res, err := raft.HandleElection(req)
 	resPonse := &rpcProto.VoteRes{}
 	copier.Copy(resPonse, res)
@@ -46,12 +51,12 @@ func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq)
 	return resPonse, err
 }
 
-func (s *RaftServer) AppendEntries(ctx context.Context, request *rpcProto.AppendReq) (*rpcProto.AppendRes, error) {
+func (s *RaftServer) AppendEntries(ctx context.Context, request *rpcProto.AppendEntriesReq) (*rpcProto.AppendEntriesRes, error) {
 	raft := app.Raft
-	req := &app.AppendRequest{}
+	req := &app.AppendEntriesRequest{}
 	copier.Copy(req, request)
 	res, err := raft.HandleAppendEntries(req)
-	resPonse := &rpcProto.AppendRes{}
+	resPonse := &rpcProto.AppendEntriesRes{}
 	copier.Copy(resPonse, res)
 
 	return resPonse, err

@@ -10,21 +10,22 @@ type Config struct {
 	HttpPort          string
 	RpcIP             string
 	RpcPort           string
-	CandidateId       int
-	ElectionTimeout   int
-	HeartBeatDuration int
+	CandidateId       int8
+	ElectionTimeout   int16
+	HeartBeatDuration int16
 	ClusterMembers    []ClusterMember
 }
 
 type ClusterMember struct {
-	RpcIP   string
-	RpcPort string
+	CandidateId int8
+	RpcIP       string
+	RpcPort     string
 }
 
 var CfgInstance *Config
 
 func InitConfig() error {
-	configStr, err := ioutil.ReadFile("config/config")
+	configStr, err := ioutil.ReadFile("./config")
 	if err != nil {
 		return err
 	}

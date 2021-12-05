@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"BlackKingBar/api/rpcProto"
 	"context"
+	"fmt"
 	"time"
 
 	"google.golang.org/grpc"
@@ -10,7 +11,8 @@ import (
 
 func SendVoteRequest(req *rpcProto.VoteReq, rpcIp, rpcPort string) (*rpcProto.VoteRes, error) {
 
-	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(150*time.Millisecond)))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(10*time.Millisecond)))
+	defer cancel()
 	conn, err := grpc.DialContext(ctx, rpcIp+":"+rpcPort, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
@@ -22,8 +24,11 @@ func SendVoteRequest(req *rpcProto.VoteReq, rpcIp, rpcPort string) (*rpcProto.Vo
 	return res, err
 }
 
-func SendLogReplicate(req *rpcProto.AppendReq, rpcIp, rpcPort string) (*rpcProto.AppendRes, error) {
-	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(50*time.Millisecond)))
+func SendLogReplicate(req *rpcProto.AppendEntriesReq, rpcIp, rpcPort string) (*rpcProto.AppendEntriesRes, error) {
+	fmt.Println(time.Now())
+	fmt.Println("心跳rpc请求开始")
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(10*time.Millisecond)))
+	defer cancel()
 	conn, err := grpc.DialContext(ctx, rpcIp+":"+rpcPort, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		return nil, err
@@ -32,5 +37,7 @@ func SendLogReplicate(req *rpcProto.AppendReq, rpcIp, rpcPort string) (*rpcProto
 
 	client := rpcProto.NewReplicateClient(conn)
 	res, err := client.AppendEntries(ctx, req)
+	fmt.Println(time.Now())
+	fmt.Println("心跳rpc请求结束")
 	return res, err
 }

@@ -9,35 +9,41 @@ import (
 )
 
 type VoteRequest struct {
-	Term         int
-	CandidateId  int
-	LastLogIndex int
-	LastLogTerm  int
+	Term         int64
+	CandidateId  int8
+	LastLogIndex int64
+	LastLogTerm  int64
 }
 
 type VoteResponse struct {
-	Term        int
+	Term        int64
 	VoteGranted bool
 }
 
 func (raft *StateMachine) StartElection() {
 
+	raft.Lock()
+	defer raft.Unlock()
 	raft.BecomeCandicate()
+	for !raft.sendVote() {
+		raft.ResetElectionTimeout()
+	}
+}
 
-	var wg sync.WaitGroup
-	var voteCount int
+func (raft *StateMachine) sendVote() bool {
+	fmt.Println("选举timerout，" + strconv.FormatInt(int64(raft.ElectionTimeout), 10))
+	voteCount := 1
 	var lock sync.Mutex
 	cfg := infrastructure.CfgInstance
-	wg.Add(len(cfg.ClusterMembers))
-	//给其它节点发送voteRequest
+	raft.Add(len(cfg.ClusterMembers))
 	for _, node := range cfg.ClusterMembers {
 		go func(node infrastructure.ClusterMember) {
 			rpcRequest := &rpcProto.VoteReq{}
-			rpcRequest.CandidateId = int64(raft.CandidateId)
+			rpcRequest.CandidateId = int32(raft.CandidateId)
 			rpcRequest.Term = int64(raft.CurrentTerm)
 			if len(raft.Log) > 0 {
 				rpcRequest.LastLogTerm = int64(raft.Log[len(raft.Log)-1].Term)
-				rpcRequest.LastLogIndex = int64(raft.Log[len(raft.Log)-1].Index)
+				rpcRequest.LastLogIndex = int64(len(raft.Log) - 1)
 			}
 			res, err := infrastructure.SendVoteRequest(rpcRequest, node.RpcIP, node.RpcPort)
 			if err == nil && res.VoteGranted {
@@ -46,35 +52,41 @@ func (raft *StateMachine) StartElection() {
 				lock.Unlock()
 			}
 
-			wg.Done()
+			raft.Done()
 		}(node)
 	}
 
-	wg.Wait()
+	raft.Wait()
 	fmt.Println("收到票数：" + strconv.FormatInt(int64(voteCount), 10))
 	if voteCount > len(cfg.ClusterMembers)/2 {
 
 		raft.BecomeLeader()
+		return true
+	} else {
+		return false
 	}
 }
 
 func (raft *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, error) {
+
+	raft.Lock()
+	defer raft.Unlock()
 	raft.ElectionTimer.Reset(raft.ElectionTimeout)
 	res := &VoteResponse{}
 	var err error
 	if request.Term < raft.CurrentTerm {
 		res.Term = raft.CurrentTerm
-
-	} else if request.Term >= raft.CurrentTerm {
-		fmt.Println("已投票,candidateId:" + strconv.FormatInt(int64(request.CandidateId), 10))
+		return res, nil
+	} else if request.Term > raft.CurrentTerm {
 		raft.VoteFor = request.CandidateId
+		raft.CurrentTerm = request.Term
 		res.Term = request.Term
 		res.VoteGranted = true
-
+		raft.BecomeFollower()
 		return res, nil
-	} //else
+	}
 
-	if (raft.VoteFor == 0 || raft.VoteFor == request.CandidateId) && (len(raft.Log) == 0 || (raft.Log[len(raft.Log)].Term <= request.LastLogTerm && raft.Log[len(raft.Log)].Index <= request.LastLogIndex)) {
+	if (raft.VoteFor == 0 || raft.VoteFor == request.CandidateId) && isUpToDateLog(raft, request) {
 
 		raft.VoteFor = raft.CandidateId
 		res.Term = request.Term
@@ -82,4 +94,9 @@ func (raft *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, e
 	}
 
 	return res, err
+}
+
+func isUpToDateLog(raft *StateMachine, req *VoteRequest) bool {
+
+	return len(raft.Log) == 0 || (int64(len(raft.Log))-1 <= req.LastLogIndex && raft.Log[len(raft.Log)-1].Term <= req.Term)
 }

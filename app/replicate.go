@@ -9,40 +9,57 @@ import (
 )
 
 type RaftLog struct {
-	Term  int
-	Index int
+	Term  int64
+	Index int64
 }
 
-type AppendRequest struct {
-	Term         int
-	PrevLogTerm  int
-	PrevLogIndex int
-	LeaderCommit int
+type AppendEntriesRequest struct {
+	Term         int64
+	PrevLogTerm  int64
+	PrevLogIndex int64
+	LeaderCommit int64
 	Entries      []RaftLog
 }
 
-type AppendResponse struct {
-	Term    int
+type AppendEntriesResponse struct {
+	Term    int64
 	Success bool
 }
 
 func (raft *StateMachine) SendHeartBeat() {
-
+	raft.RLock()
+	defer raft.RUnlock()
 	cfg := infrastructure.CfgInstance
 	var wg sync.WaitGroup
 	wg.Add(len(cfg.ClusterMembers))
 
 	for _, node := range cfg.ClusterMembers {
 		go func(node infrastructure.ClusterMember) {
-			request := &rpcProto.AppendReq{}
+			request := &rpcProto.AppendEntriesReq{}
 			request.Term = int64(raft.CurrentTerm)
-			request.LeaderId = int64(raft.CandidateId)
+			request.LeaderId = int32(raft.CandidateId)
 			request.LeaderCommit = int64(raft.CommitIndex)
+			request.Entries = make([]*rpcProto.LogEntry, 0)
 			if len(raft.Log) > 0 {
-				request.PrevLogTerm = int64(raft.Log[len(raft.Log)-1].Term)
-				request.PrevLogIndex = int64(raft.Log[len(raft.Log)-1].Index)
+				request.PrevLogIndex = int64(raft.NextIndex[node.CandidateId]) - 1
+				request.PrevLogTerm = int64(raft.Log[request.PrevLogIndex].Term)
+				entry := &rpcProto.LogEntry{}
+				entry.Index = int64(raft.NextIndex[node.CandidateId])
+				entry.Term = int64(raft.Log[raft.NextIndex[node.CandidateId]].Term)
+				request.Entries = append(request.Entries, entry)
 			}
-			infrastructure.SendLogReplicate(request, node.RpcIP, node.RpcPort)
+			res, err := infrastructure.SendLogReplicate(request, node.RpcIP, node.RpcPort)
+			if err != nil {
+				return
+			}
+
+			if res.Success {
+
+				raft.NextIndex[node.CandidateId]++
+				raft.MatchIndex[node.CandidateId]++
+			} else {
+				raft.NextIndex[node.CandidateId]--
+			}
 			wg.Done()
 		}(node)
 	}
@@ -50,23 +67,40 @@ func (raft *StateMachine) SendHeartBeat() {
 	wg.Wait()
 }
 
-func (raft *StateMachine) HandleAppendEntries(req *AppendRequest) (*AppendResponse, error) {
-
+func (raft *StateMachine) HandleAppendEntries(req *AppendEntriesRequest) (*AppendEntriesResponse, error) {
+	raft.RLock()
+	defer raft.RUnlock()
 	fmt.Println("收到心跳，currntTerm:" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
 
-	res := &AppendResponse{}
+	raft.ResetElectionTimeout()
+	res := &AppendEntriesResponse{}
 	if raft.CurrentTerm > req.Term {
 		res.Term = raft.CurrentTerm
 		return res, nil
-	} else if raft.CurrentTerm <= req.Term {
+	} else if !isMatchPrevLog(req, raft) {
+		res.Term = raft.CurrentTerm
+		return res, nil
+	}
 
-		raft.CurrentTerm = req.Term
-		if raft.State == Leader || raft.State == Candidate {
-			raft.BecomeFollower()
-		} else {
-			raft.ElectionTimer.Reset(Raft.ElectionTimeout)
+	raft.CommitIndex = req.LeaderCommit
+	for _, entry := range req.Entries {
+		if int64(len(raft.Log))-1 >= entry.Index && raft.Log[entry.Index].Term != entry.Term {
+			raft.Log = raft.Log[:entry.Index]
+		}
+
+		raft.Log = append(raft.Log, entry)
+		if raft.CommitIndex > entry.Index {
+			raft.CommitIndex = entry.Index
 		}
 	}
 
+	res.Success = true
 	return res, nil
+}
+
+func isMatchPrevLog(req *AppendEntriesRequest, raft *StateMachine) bool {
+	if int64(len(raft.Log)) > req.PrevLogIndex && raft.Log[req.PrevLogIndex].Term == req.Term {
+		return true
+	}
+	return false
 }
