@@ -42,4 +42,6 @@ message AppendEntriesRes {
 message logEntry {
   int64 term=1;
   int64 index=2;
+  string key=3;
+  string value=4;
 }

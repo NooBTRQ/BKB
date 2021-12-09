@@ -6,6 +6,9 @@ import (
 )
 
 type Config struct {
+	MachineFilePath   string
+	DataFilePath      string
+	LogFilePath       string
 	HttpIP            string
 	HttpPort          string
 	RpcIP             string

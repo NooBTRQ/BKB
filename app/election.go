@@ -22,8 +22,8 @@ type VoteResponse struct {
 
 func (raft *StateMachine) StartElection() {
 
-	raft.Lock()
-	defer raft.Unlock()
+	raft.lock.Lock()
+	defer raft.lock.Unlock()
 	raft.BecomeCandicate()
 	for !raft.sendVote() {
 		raft.ResetElectionTimeout()
@@ -35,7 +35,7 @@ func (raft *StateMachine) sendVote() bool {
 	voteCount := 1
 	var lock sync.Mutex
 	cfg := infrastructure.CfgInstance
-	raft.Add(len(cfg.ClusterMembers))
+	raft.wg.Add(len(cfg.ClusterMembers))
 	for _, node := range cfg.ClusterMembers {
 		go func(node infrastructure.ClusterMember) {
 			rpcRequest := &rpcProto.VoteReq{}
@@ -52,11 +52,11 @@ func (raft *StateMachine) sendVote() bool {
 				lock.Unlock()
 			}
 
-			raft.Done()
+			raft.wg.Done()
 		}(node)
 	}
 
-	raft.Wait()
+	raft.wg.Wait()
 	fmt.Println("收到票数：" + strconv.FormatInt(int64(voteCount), 10))
 	if voteCount > len(cfg.ClusterMembers)/2 {
 
@@ -69,8 +69,8 @@ func (raft *StateMachine) sendVote() bool {
 
 func (raft *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, error) {
 
-	raft.Lock()
-	defer raft.Unlock()
+	raft.lock.Lock()
+	defer raft.lock.Unlock()
 	raft.ElectionTimer.Reset(raft.ElectionTimeout)
 	res := &VoteResponse{}
 	var err error
@@ -91,6 +91,7 @@ func (raft *StateMachine) HandleElection(request *VoteRequest) (*VoteResponse, e
 		raft.VoteFor = raft.CandidateId
 		res.Term = request.Term
 		res.VoteGranted = true
+		raft.BecomeFollower()
 	}
 
 	return res, err

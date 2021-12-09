@@ -1,4 +1,7 @@
 {
+    "MachineFilePath":"./raft.state",
+    "DataFilePath":"./raft.data",
+    "LogFilePath":"./raft.log",
     "HttpIP" : "127.0.0.1",
     "HttpPort" : "8081",
     "RpcIP" : "127.0.0.1",

@@ -8,9 +8,21 @@ import (
 	"sync"
 )
 
+const (
+	Set    = 1
+	Delete = 2
+)
+
 type RaftLog struct {
 	Term  int64
 	Index int64
+	Cmd   Command
+}
+
+type Command struct {
+	Operation int8
+	Key       string
+	Value     string
 }
 
 type AppendEntriesRequest struct {
@@ -27,8 +39,8 @@ type AppendEntriesResponse struct {
 }
 
 func (raft *StateMachine) SendHeartBeat() {
-	raft.RLock()
-	defer raft.RUnlock()
+	raft.lock.Lock()
+	defer raft.lock.Unlock()
 	cfg := infrastructure.CfgInstance
 	var wg sync.WaitGroup
 	wg.Add(len(cfg.ClusterMembers))
@@ -68,8 +80,8 @@ func (raft *StateMachine) SendHeartBeat() {
 }
 
 func (raft *StateMachine) HandleAppendEntries(req *AppendEntriesRequest) (*AppendEntriesResponse, error) {
-	raft.RLock()
-	defer raft.RUnlock()
+	raft.lock.Lock()
+	defer raft.lock.Unlock()
 	fmt.Println("收到心跳，currntTerm:" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
 
 	raft.ResetElectionTimeout()
