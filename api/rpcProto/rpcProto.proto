@@ -44,4 +44,5 @@ message logEntry {
   int64 index=2;
   string key=3;
   string value=4;
+  int64 operation=5;
 }

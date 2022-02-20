@@ -3,12 +3,13 @@ package apiServer
 
 import (
 	"BlackKingBar/api/rpcProto"
-	"BlackKingBar/app"
 	"BlackKingBar/infrastructure"
+	"BlackKingBar/raft"
 	"context"
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/copier"
 	"google.golang.org/grpc"
@@ -17,9 +18,7 @@ import (
 type RaftServer struct {
 }
 
-var rpcServer *grpc.Server
-
-func StartRpc() error {
+func StartRpc(ctx context.Context) {
 
 	rpcServer := grpc.NewServer()
 	s := RaftServer{}
@@ -29,35 +28,64 @@ func StartRpc() error {
 
 	listener, err := net.Listen("tcp", cfg.HttpIP+":"+cfg.RpcPort)
 	if err != nil {
-		return err
+		if err != nil {
+			panic("start rpcServer err," + err.Error())
+		}
 	}
-	return rpcServer.Serve(listener)
-}
+	go func() {
+		err = rpcServer.Serve(listener)
+		if err != nil {
+			panic("start rpcServer err," + err.Error())
+		}
+	}()
 
-func StopRpc() {
+	<-ctx.Done()
+
 	rpcServer.Stop()
 }
 
 func (s *RaftServer) RequestVote(ctx context.Context, request *rpcProto.VoteReq) (*rpcProto.VoteRes, error) {
 
-	raft := app.Raft
-	req := &app.VoteRequest{}
+	if ctx.Err() == context.Canceled {
+		return nil, ctx.Err()
+	}
+
+	rf := raft.R
+	req := &raft.VoteRequest{}
+	req.Done = make(chan *raft.VoteResponse)
 	copier.Copy(req, request)
-	fmt.Println("收到投票请求,candidateId:" + strconv.FormatInt(int64(req.CandidateId), 10) + "termId:" + strconv.FormatInt(int64(req.Term), 10))
-	res, err := raft.HandleElection(req)
+
+	if ctx.Err() == context.Canceled {
+		return nil, ctx.Err()
+	}
+
+	rf.EventCh <- req
+	res := <-req.Done
 	resPonse := &rpcProto.VoteRes{}
 	copier.Copy(resPonse, res)
 
-	return resPonse, err
+	return resPonse, res.Err
 }
 
 func (s *RaftServer) AppendEntries(ctx context.Context, request *rpcProto.AppendEntriesReq) (*rpcProto.AppendEntriesRes, error) {
-	raft := app.Raft
-	req := &app.AppendEntriesRequest{}
+	if ctx.Err() == context.Canceled {
+		return nil, ctx.Err()
+	}
+	fmt.Println("收到appendEntries" + strconv.FormatInt(int64(request.Term), 10))
+	rf := raft.R
+	rf.ResetElectionTicker()
+	rf.ReceiveHeartBeatTime = time.Now()
+	req := &raft.AppendEntriesRequest{}
 	copier.Copy(req, request)
-	res, err := raft.HandleAppendEntries(req)
+	req.Done = make(chan *raft.AppendEntriesResponse)
+
+	if ctx.Err() == context.Canceled {
+		return nil, ctx.Err()
+	}
+	rf.EventCh <- req
+	res := <-req.Done
 	resPonse := &rpcProto.AppendEntriesRes{}
 	copier.Copy(resPonse, res)
 
-	return resPonse, err
+	return resPonse, res.Err
 }

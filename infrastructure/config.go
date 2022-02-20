@@ -9,20 +9,21 @@ type Config struct {
 	MachineFilePath   string
 	DataFilePath      string
 	LogFilePath       string
+	LogInfoPath       string
 	HttpIP            string
 	HttpPort          string
 	RpcIP             string
 	RpcPort           string
-	CandidateId       int8
+	NodeId            int8
 	ElectionTimeout   int16
 	HeartBeatDuration int16
 	ClusterMembers    []ClusterMember
 }
 
 type ClusterMember struct {
-	CandidateId int8
-	RpcIP       string
-	RpcPort     string
+	NodeId  int8
+	RpcIP   string
+	RpcPort string
 }
 
 var CfgInstance *Config
@@ -36,4 +37,9 @@ func InitConfig() error {
 	err = json.Unmarshal(configStr, CfgInstance)
 
 	return err
+}
+
+func (cfg *Config) HalfCount() int64 {
+
+	return int64(len(cfg.ClusterMembers) / 2)
 }

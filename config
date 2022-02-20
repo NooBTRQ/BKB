@@ -2,21 +2,20 @@
     "MachineFilePath":"./raft.state",
     "DataFilePath":"./raft.data",
     "LogFilePath":"./raft.log",
+    "LogInfoPath":"./raft.info",
     "HttpIP" : "127.0.0.1",
     "HttpPort" : "8081",
     "RpcIP" : "127.0.0.1",
-    "RpcPort" : "8082",
-    "CandidateId" : 2,
+    "RpcPort" : "8084",
+    "CandidateId" : 1,
     "ClusterMembers" : [
         {
-            "CandidateId" : 1,
-            "RpcIP" : "127.0.0.1",
-            "RpcPort" : "8084"
-        },
-        {
-            "CandidateId" : 1,
             "RpcIP" : "127.0.0.1",
             "RpcPort" : "8085"
+        },
+        {
+            "RpcIP" : "127.0.0.1",
+            "RpcPort" : "8086"
         }
     ]
 }
