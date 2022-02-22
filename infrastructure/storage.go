@@ -45,7 +45,7 @@ func ReadFile(filePath string) ([]byte, error) {
 
 func IntToBytes(n interface{}) ([]byte, error) {
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	err := binary.Write(bytesBuffer, binary.BigEndian, &n)
+	err := binary.Write(bytesBuffer, binary.BigEndian, n)
 	return bytesBuffer.Bytes(), err
 }
 

@@ -3,9 +3,8 @@ package raft
 import (
 	"BlackKingBar/api/rpcProto"
 	"BlackKingBar/infrastructure"
-	"fmt"
-	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 const (
@@ -70,19 +69,15 @@ func (raft *Raft) HandleClientOpeartion(op *Command) bool {
 	})
 
 	if replicateCount > len(cfg.ClusterMembers)/2 {
-		if op.Operation == Set {
-			raft.Data[op.Key] = op.Value
-		} else if op.Operation == Delete {
-			delete(raft.Data, op.Key)
-		}
-		raft.LastApplied = log.Index
+		atomic.StoreInt64(&raft.CommitIndex, log.Index)
+		raft.CommitCh <- struct{}{}
 		return true
 	}
 	return false
 }
 
 func (raft *Raft) HeartBeat() {
-	fmt.Println("发送心跳:" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
+	//fmt.Println("发送心跳:" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
 	raft.sendLogEntries()
 }
 
@@ -101,31 +96,30 @@ func (raft *Raft) sendLogEntries() {
 			request.Entries = make([]*rpcProto.LogEntry, 0)
 			v, _ := raft.NextIndex.Load(node.NodeId)
 			nextIdx := v.(int64)
-			if len(raft.Log) > 1 {
-
-				request.PrevLogIndex = nextIdx - 1
-				request.PrevLogTerm = int64(raft.Log[request.PrevLogIndex].Term)
-				if raft.LastLog().Index >= nextIdx {
-					sendLogs := raft.Log[nextIdx:]
-					for _, log := range sendLogs {
-						entry := &rpcProto.LogEntry{}
-						entry.Index = nextIdx
-						entry.Term = int64(raft.Log[nextIdx].Term)
-						entry.Key = log.Cmd.Key
-						entry.Operation = int64(log.Cmd.Operation)
-						entry.Value = log.Cmd.Value
-						request.Entries = append(request.Entries, entry)
-					}
+			request.PrevLogIndex = nextIdx - 1
+			request.PrevLogTerm = int64(raft.Log[request.PrevLogIndex].Term)
+			lastIndex := nextIdx
+			if raft.LastLog().Index >= nextIdx {
+				sendLogs := raft.Log[nextIdx:]
+				for _, log := range sendLogs {
+					entry := &rpcProto.LogEntry{}
+					entry.Index = log.Index
+					entry.Term = log.Term
+					entry.Key = log.Cmd.Key
+					entry.Operation = int64(log.Cmd.Operation)
+					entry.Value = log.Cmd.Value
+					request.Entries = append(request.Entries, entry)
+					lastIndex = log.Index
 				}
 			}
 
 			res, err := infrastructure.AppendEntries(request, node.RpcIP, node.RpcPort)
 			if err != nil {
-				fmt.Printf("复制日志:" + err.Error())
-			} else if res.Success {
-				raft.MatchIndex.Store(node.NodeId, nextIdx)
-				raft.NextIndex.Store(node.NodeId, nextIdx+1)
-			} else {
+				//fmt.Println("复制日志:" + err.Error())
+			} else if res.Success && len(request.Entries) > 0 {
+				raft.MatchIndex.Store(node.NodeId, lastIndex)
+				raft.NextIndex.Store(node.NodeId, lastIndex+1)
+			} else if !res.Success {
 				raft.NextIndex.Store(node.NodeId, nextIdx-1)
 			}
 			wg.Done()
@@ -136,8 +130,8 @@ func (raft *Raft) sendLogEntries() {
 
 func (raft *Raft) HandleAppendEntries(req *AppendEntriesRequest) *AppendEntriesResponse {
 	res := &AppendEntriesResponse{}
-	if req.Term > raft.CurrentTerm && raft.State != Follower {
-		raft.BecomeFollower(req)
+	if req.Term > raft.CurrentTerm {
+		raft.BecomeFollowerWithLogAppend(req)
 	}
 
 	if raft.CurrentTerm > req.Term {
@@ -150,8 +144,12 @@ func (raft *Raft) HandleAppendEntries(req *AppendEntriesRequest) *AppendEntriesR
 
 	raft.CommitIndex = req.LeaderCommit
 	raft.LeaderId = req.LeaderId
+	lastEntryIdx := req.LeaderCommit
 	for _, entry := range req.Entries {
-		if raft.LastLog().Index > entry.Index && raft.Log[entry.Index].Term != entry.Term {
+
+		if raft.LastLog().Index >= entry.Index && raft.Log[entry.Index].Term == entry.Term {
+			continue
+		} else if raft.LastLog().Index >= entry.Index && raft.Log[entry.Index].Term != entry.Term {
 			raft.Log = raft.Log[:entry.Index]
 		}
 
@@ -161,20 +159,12 @@ func (raft *Raft) HandleAppendEntries(req *AppendEntriesRequest) *AppendEntriesR
 			res.Err = err
 			return res
 		}
-		if raft.CommitIndex > entry.Index {
-			raft.CommitIndex = entry.Index
-			if raft.CommitIndex > raft.LastApplied {
 
-				if entry.Cmd.Operation == Set {
-					raft.Data[entry.Cmd.Key] = entry.Cmd.Value
-				} else if entry.Cmd.Operation == Delete {
-					delete(raft.Data, entry.Cmd.Key)
-				}
-				raft.LastApplied = raft.CommitIndex
-			}
-		}
+		lastEntryIdx = entry.Index
 	}
 
+	raft.CommitIndex = int64(infrastructure.Min(int(req.LeaderCommit), int(lastEntryIdx)))
+	raft.CommitCh <- struct{}{}
 	res.Success = true
 	return res
 }

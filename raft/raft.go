@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -36,10 +37,11 @@ type Raft struct {
 	HeartBeatDuration    time.Duration
 	HeartBeatTicker      *time.Ticker
 	ReceiveHeartBeatTime time.Time
-	//lock              sync.RWMutex
-	Data    map[string]string
-	EventCh chan interface{}
-	Done    chan interface{}
+	lock                 sync.RWMutex
+	Data                 map[string]string
+	EventCh              chan interface{}
+	Done                 chan interface{}
+	CommitCh             chan interface{}
 }
 
 var R *Raft
@@ -53,6 +55,7 @@ func InitStateMachine(ctx context.Context) error {
 	R.NodeId = cfg.NodeId
 	R.EventCh = make(chan interface{})
 	R.Done = make(chan interface{})
+	R.CommitCh = make(chan interface{})
 	R.ElectionTicker = time.NewTicker(1000 * time.Second)
 	R.HeartBeatTicker = time.NewTicker(1000 * time.Second)
 	err := R.RecoverMachine()
@@ -67,7 +70,7 @@ func InitStateMachine(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "recover data err")
 	}
-	R.BecomeFollower(nil)
+	R.BecomeFollower()
 	go func() {
 		for {
 			select {
@@ -75,8 +78,8 @@ func InitStateMachine(ctx context.Context) error {
 				return
 			case <-R.ElectionTicker.C:
 				d := time.Since(R.ReceiveHeartBeatTime)
-				fmt.Println(d)
-				fmt.Println(R.ElectionTimeout)
+				//fmt.Println(d)
+				//fmt.Println(R.ElectionTimeout)
 				if d > R.ElectionTimeout {
 					R.EventCh <- Election{}
 				}
@@ -95,6 +98,7 @@ func InitStateMachine(ctx context.Context) error {
 			}
 		}
 	}()
+	go R.ApplyLog(ctx)
 	return nil
 }
 
@@ -119,33 +123,38 @@ func (raft *Raft) Process(ctx context.Context) {
 func (raft *Raft) handleEvent(msg interface{}) {
 	switch e := msg.(type) {
 	case Election:
-		fmt.Println("处理发起选举1")
+		//fmt.Println("处理发起选举1")
 		raft.StartElection()
 	case *VoteRequest:
-		fmt.Println("处理投票请求2")
+		//fmt.Println("处理投票请求2")
 		res := raft.HandleVoteRequest(e)
 		e.Done <- res
 	case HeartBeat:
-		fmt.Println("处理发起心跳3")
+		//fmt.Println("处理发起心跳3")
 		raft.HeartBeat()
 	case *Command:
 		res := raft.HandleClientOpeartion(e)
 		e.Done <- res
 	case *AppendEntriesRequest:
-		fmt.Println("处理收到appendlog")
+		//fmt.Println("处理收到appendlog")
 		res := raft.HandleAppendEntries(e)
 		e.Done <- res
 	default:
 	}
 }
 
-func (raft *Raft) BecomeFollower(req *AppendEntriesRequest) {
+func (raft *Raft) BecomeFollowerWithLogAppend(req *AppendEntriesRequest) {
 	raft.State = Follower
 	if req != nil {
 		raft.LeaderId = req.LeaderId
+		raft.CurrentTerm = req.Term
 	}
 	raft.ResetElectionTicker()
 	raft.StopHeartBeatTicker()
+}
+
+func (raft *Raft) BecomeFollower() {
+	raft.BecomeFollowerWithLogAppend(nil)
 }
 
 func (raft *Raft) BecomeCandicate() {
@@ -162,7 +171,7 @@ func (raft *Raft) BecomeLeader() {
 	cfg := infra.CfgInstance
 
 	for _, member := range cfg.ClusterMembers {
-		raft.NextIndex.Store(member.NodeId, raft.LastLog().Index)
+		raft.NextIndex.Store(member.NodeId, raft.LastLog().Index+1)
 	}
 	raft.HeartBeat()
 	raft.ResetHeartBeatTicker()
@@ -270,7 +279,7 @@ func (raft *Raft) SaveLog(log *RaftLog) error {
 func (raft *Raft) RecoverLog() error {
 
 	raft.Log = make([]RaftLog, 0)
-	raft.Log = append(raft.Log, RaftLog{})
+	raft.Log = append(raft.Log, RaftLog{Cmd: Command{Operation: -1}})
 	cfg := infra.CfgInstance
 	data, err := infra.ReadFile(cfg.LogFilePath)
 	if isFileNotFound(err) {
@@ -382,8 +391,33 @@ func (raft *Raft) RecoverData() error {
 	return nil
 }
 
-func (raft *Raft) GetValue(key string) (string, bool) {
+func (raft *Raft) ApplyLog(ctx context.Context) {
 
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-raft.CommitCh:
+			if atomic.LoadInt64(&raft.CommitIndex) > raft.LastApplied {
+				raft.lock.Lock()
+
+				log := raft.Log[raft.LastApplied+1]
+				if log.Cmd.Operation == Set {
+					raft.Data[log.Cmd.Key] = log.Cmd.Value
+				} else if log.Cmd.Operation == Delete {
+					delete(raft.Data, log.Cmd.Key)
+				}
+				raft.lock.Unlock()
+				raft.LastApplied++
+			}
+		}
+	}
+
+}
+
+func (raft *Raft) GetValue(key string) (string, bool) {
+	raft.lock.RLock()
+	defer raft.lock.RUnlock()
 	value, has := raft.Data[key]
 	return value, has
 }

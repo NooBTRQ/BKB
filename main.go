@@ -6,6 +6,7 @@ import (
 	"BlackKingBar/raft"
 	"context"
 	"fmt"
+	"strconv"
 )
 
 const (
@@ -60,6 +61,9 @@ func main() {
 			for _, log := range raft.R.Log {
 				fmt.Printf("term:%d,index:%d,key:%s,op:%d,value:%s\n", log.Term, log.Index, log.Cmd.Key, log.Cmd.Operation, log.Cmd.Value)
 			}
+		default:
+			nodeId, _ := strconv.Atoi(cmd)
+			fmt.Println(raft.R.NextIndex.Load(int8(nodeId)))
 
 		}
 	}

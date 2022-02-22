@@ -6,9 +6,7 @@ import (
 	"BlackKingBar/infrastructure"
 	"BlackKingBar/raft"
 	"context"
-	"fmt"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/copier"
@@ -71,12 +69,21 @@ func (s *RaftServer) AppendEntries(ctx context.Context, request *rpcProto.Append
 	if ctx.Err() == context.Canceled {
 		return nil, ctx.Err()
 	}
-	fmt.Println("收到appendEntries" + strconv.FormatInt(int64(request.Term), 10))
+	//fmt.Println("收到appendEntries" + strconv.FormatInt(int64(request.Term), 10))
 	rf := raft.R
 	rf.ResetElectionTicker()
 	rf.ReceiveHeartBeatTime = time.Now()
 	req := &raft.AppendEntriesRequest{}
 	copier.Copy(req, request)
+	req.Entries = make([]raft.RaftLog, 0)
+	for _, rpcEntry := range request.Entries {
+
+		entry := raft.RaftLog{}
+		entry.Term = rpcEntry.Term
+		entry.Index = rpcEntry.Index
+		entry.Cmd = raft.Command{Key: rpcEntry.Key, Value: rpcEntry.Value, Operation: int8(rpcEntry.Operation)}
+		req.Entries = append(req.Entries, entry)
+	}
 	req.Done = make(chan *raft.AppendEntriesResponse)
 
 	if ctx.Err() == context.Canceled {

@@ -4,7 +4,6 @@ import (
 	"BlackKingBar/api/rpcProto"
 	"BlackKingBar/infrastructure"
 	"fmt"
-	"strconv"
 	"sync"
 	"sync/atomic"
 )
@@ -36,7 +35,7 @@ func (raft *Raft) StartElection() {
 // 发起投票，若获得半数以上选票，则变为leader
 func (raft *Raft) RequetVote() {
 	raft.StopElectionTicker()
-	fmt.Println("发起选举" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
+	//fmt.Println("发起选举" + strconv.FormatInt(int64(raft.CurrentTerm), 10))
 	var voteCount int64 = 1
 	cfg := infrastructure.CfgInstance
 	var wg sync.WaitGroup
@@ -73,7 +72,7 @@ func (raft *Raft) RequetVote() {
 }
 
 func (raft *Raft) HandleVoteRequest(request *VoteRequest) *VoteResponse {
-	fmt.Println("处理投票" + strconv.FormatInt(int64(request.Term), 10))
+	//fmt.Println("处理投票" + strconv.FormatInt(int64(request.Term), 10))
 	res := &VoteResponse{}
 	var err error
 	if request.Term < raft.CurrentTerm {
@@ -84,7 +83,7 @@ func (raft *Raft) HandleVoteRequest(request *VoteRequest) *VoteResponse {
 		raft.CurrentTerm = request.Term
 		res.Term = request.Term
 		res.VoteGranted = true
-		raft.BecomeFollower(nil)
+		raft.BecomeFollower()
 		return res
 	}
 
@@ -94,7 +93,7 @@ func (raft *Raft) HandleVoteRequest(request *VoteRequest) *VoteResponse {
 		raft.CurrentTerm = request.Term
 		res.Term = request.Term
 		res.VoteGranted = true
-		raft.BecomeFollower(nil)
+		raft.BecomeFollower()
 	}
 	err = raft.SaveMachine()
 	res.Err = err
