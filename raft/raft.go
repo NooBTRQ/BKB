@@ -38,10 +38,10 @@ type Raft struct {
 	HeartBeatTicker      *time.Ticker
 	ReceiveHeartBeatTime time.Time
 	lock                 sync.RWMutex
+	con                  sync.Cond
 	Data                 map[string]string
 	EventCh              chan interface{}
 	Done                 chan interface{}
-	CommitCh             chan interface{}
 }
 
 var R *Raft
@@ -55,9 +55,9 @@ func InitStateMachine(ctx context.Context) error {
 	R.NodeId = cfg.NodeId
 	R.EventCh = make(chan interface{})
 	R.Done = make(chan interface{})
-	R.CommitCh = make(chan interface{})
 	R.ElectionTicker = time.NewTicker(1000 * time.Second)
 	R.HeartBeatTicker = time.NewTicker(1000 * time.Second)
+	R.con = *sync.NewCond(&sync.Mutex{})
 	err := R.RecoverMachine()
 	if err != nil {
 		return errors.Wrap(err, "recover machine err")
@@ -168,6 +168,7 @@ func (raft *Raft) BecomeLeader() {
 	raft.State = Leader
 	raft.LeaderId = raft.NodeId
 	raft.HeartBeatDuration = time.Duration(10) * time.Millisecond
+	raft.Log = append(raft.Log, RaftLog{Term: raft.CurrentTerm, Index: raft.LastLog().Index})
 	cfg := infra.CfgInstance
 
 	for _, member := range cfg.ClusterMembers {
@@ -180,7 +181,8 @@ func (raft *Raft) BecomeLeader() {
 
 func (raft *Raft) ResetElectionTicker() {
 	raft.ElectionTicker.Stop()
-	raft.ElectionTimeout = time.Duration(infra.GetRandNumber(150, 300, int(raft.NodeId))) * time.Millisecond
+	timeout, _ := infra.GetRandNumber(150, 300, int(raft.NodeId))
+	raft.ElectionTimeout = time.Duration(timeout) * time.Millisecond
 	raft.ElectionTicker.Reset(raft.ElectionTimeout)
 }
 
@@ -212,8 +214,13 @@ func (raft *Raft) SaveMachine() error {
 	if err != nil {
 		return err
 	}
+	lastApplyByte, err := infra.IntToBytes(int64(raft.LastApplied))
+	if err != nil {
+		return err
+	}
 	data = append(data, termByte...)
 	data = append(data, voteByte...)
+	data = append(data, lastApplyByte...)
 	cfg := infra.CfgInstance
 	err = infra.WriteFile(data, cfg.MachineFilePath)
 	return err
@@ -235,7 +242,12 @@ func (raft *Raft) RecoverMachine() error {
 	if err != nil {
 		return err
 	}
-	err = infra.BytesToInt(data[8:], &raft.VoteFor)
+	err = infra.BytesToInt(data[8:9], &raft.VoteFor)
+	if err != nil {
+		return err
+	}
+
+	err = infra.BytesToInt(data[9:], &raft.LastApplied)
 	return err
 }
 
@@ -293,30 +305,30 @@ func (raft *Raft) RecoverLog() error {
 	for len(data) > 0 {
 		log := RaftLog{}
 		err = infra.BytesToInt(data[:8], &log.Index)
-		if err == nil {
+		if err != nil {
 			return err
 		}
 		data = data[8:]
 		err = infra.BytesToInt(data[:8], &log.Term)
-		if err == nil {
+		if err != nil {
 			return err
 		}
 		data = data[8:]
 		log.Cmd = Command{}
 		err = infra.BytesToInt(data[:1], &log.Cmd.Operation)
-		if err == nil {
+		if err != nil {
 			return err
 		}
 		data = data[1:]
 		var kLen int16
 		var vLen int16
 		err = infra.BytesToInt(data[:2], &kLen)
-		if err == nil {
+		if err != nil {
 			return err
 		}
 		data = data[2:]
 		err = infra.BytesToInt(data[:2], &vLen)
-		if err == nil {
+		if err != nil {
 			return err
 		}
 		data = data[2:]
@@ -397,8 +409,8 @@ func (raft *Raft) ApplyLog(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-raft.CommitCh:
-			if atomic.LoadInt64(&raft.CommitIndex) > raft.LastApplied {
+		default:
+			for atomic.LoadInt64(&raft.CommitIndex) > raft.LastApplied {
 				raft.lock.Lock()
 
 				log := raft.Log[raft.LastApplied+1]
@@ -409,13 +421,23 @@ func (raft *Raft) ApplyLog(ctx context.Context) {
 				}
 				raft.lock.Unlock()
 				raft.LastApplied++
+				raft.SaveData()
+				raft.con.Broadcast()
 			}
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 
 }
 
 func (raft *Raft) GetValue(key string) (string, bool) {
+
+	for atomic.LoadInt64(&raft.LastApplied) < atomic.LoadInt64(&raft.CommitIndex) {
+		raft.con.L.Lock()
+		raft.con.Wait()
+		raft.con.L.Unlock()
+	}
+
 	raft.lock.RLock()
 	defer raft.lock.RUnlock()
 	value, has := raft.Data[key]

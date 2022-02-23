@@ -70,7 +70,6 @@ func (raft *Raft) HandleClientOpeartion(op *Command) bool {
 
 	if replicateCount > len(cfg.ClusterMembers)/2 {
 		atomic.StoreInt64(&raft.CommitIndex, log.Index)
-		raft.CommitCh <- struct{}{}
 		return true
 	}
 	return false
@@ -164,7 +163,6 @@ func (raft *Raft) HandleAppendEntries(req *AppendEntriesRequest) *AppendEntriesR
 	}
 
 	raft.CommitIndex = int64(infrastructure.Min(int(req.LeaderCommit), int(lastEntryIdx)))
-	raft.CommitCh <- struct{}{}
 	res.Success = true
 	return res
 }

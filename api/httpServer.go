@@ -6,6 +6,7 @@ import (
 	"BlackKingBar/raft"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -31,6 +32,11 @@ func StartHttp(ctx context.Context) {
 func getHandle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+
+	if raft.R.State != raft.Leader {
+		w.WriteHeader(http.StatusFound)
+		w.Write([]byte(fmt.Sprintf("current leaderId:%d", raft.R.LeaderId)))
 	}
 
 	query := r.URL.Query()
@@ -69,12 +75,12 @@ func setHandle(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case <-time.After(10 * time.Second):
-		w.Write([]byte{0})
+		w.Write([]byte("timeout"))
 	case success := <-data.Done:
 		if success {
-			w.Write([]byte("写入成功！"))
+			w.Write([]byte("write success!"))
 		} else {
-			w.Write([]byte("写入失败！"))
+			w.Write([]byte("write failed!"))
 		}
 	}
 }
@@ -95,16 +101,16 @@ func deleteHandle(w http.ResponseWriter, r *http.Request) {
 	data := &raft.Command{Operation: raft.Delete, Key: key}
 	data.Done = make(chan bool)
 
-	raft.R.EventCh <- &data
+	raft.R.EventCh <- data
 
 	select {
 	case <-time.After(10 * time.Second):
-		w.Write([]byte{0})
+		w.Write([]byte("timeout"))
 	case success := <-data.Done:
 		if success {
-			w.Write([]byte("写入成功！"))
+			w.Write([]byte("write success!"))
 		} else {
-			w.Write([]byte("写入失败！"))
+			w.Write([]byte("write failed!"))
 		}
 	}
 }

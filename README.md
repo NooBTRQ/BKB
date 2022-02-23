@@ -12,8 +12,9 @@ main function:
 7. log compaction
 
 TODO:
-1. 服务下线相关功能
+1. 服务下线相关功能 ✔
 2. 补充test(节点超时、下线等测试用例)
 3. prevote
 4. Batching,pipelining
-5. readindex,lead lease
+5. readindex ✔
+6. lead lease

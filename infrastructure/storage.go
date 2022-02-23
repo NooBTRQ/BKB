@@ -25,7 +25,7 @@ func WriteFile(data []byte, filePath string) error {
 }
 
 func AppendFile(data []byte, filePath string) error {
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return errors.Wrap(err, "open File error")
 	}
