@@ -17,7 +17,7 @@ type Config struct {
 	NodeId            int8
 	ElectionTimeout   int16
 	HeartBeatDuration int16
-	ClusterMembers    []ClusterMember
+	Peers             []ClusterMember
 }
 
 type ClusterMember struct {
@@ -41,5 +41,5 @@ func InitConfig() error {
 
 func (cfg *Config) HalfCount() int64 {
 
-	return int64(len(cfg.ClusterMembers) / 2)
+	return int64(len(cfg.Peers) / 2)
 }

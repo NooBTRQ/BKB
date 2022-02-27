@@ -171,7 +171,7 @@ func (raft *Raft) BecomeLeader() {
 	raft.Log = append(raft.Log, RaftLog{Term: raft.CurrentTerm, Index: raft.LastLog().Index})
 	cfg := infra.CfgInstance
 
-	for _, member := range cfg.ClusterMembers {
+	for _, member := range cfg.Peers {
 		raft.NextIndex.Store(member.NodeId, raft.LastLog().Index+1)
 	}
 	raft.HeartBeat()
@@ -432,7 +432,8 @@ func (raft *Raft) ApplyLog(ctx context.Context) {
 
 func (raft *Raft) GetValue(key string) (string, bool) {
 
-	for atomic.LoadInt64(&raft.LastApplied) < atomic.LoadInt64(&raft.CommitIndex) {
+	readIndex := atomic.LoadInt64(&raft.CommitIndex)
+	for atomic.LoadInt64(&raft.LastApplied) < readIndex {
 		raft.con.L.Lock()
 		raft.con.Wait()
 		raft.con.L.Unlock()

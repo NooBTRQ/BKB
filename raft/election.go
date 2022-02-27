@@ -39,8 +39,8 @@ func (raft *Raft) RequetVote() {
 	var voteCount int64 = 1
 	cfg := infrastructure.CfgInstance
 	var wg sync.WaitGroup
-	wg.Add(len(cfg.ClusterMembers))
-	for _, node := range cfg.ClusterMembers {
+	wg.Add(len(cfg.Peers))
+	for _, node := range cfg.Peers {
 		go func(node infrastructure.ClusterMember) {
 			rpcRequest := &rpcProto.VoteReq{}
 			rpcRequest.CandidateId = int32(raft.NodeId)

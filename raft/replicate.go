@@ -68,7 +68,7 @@ func (raft *Raft) HandleClientOpeartion(op *Command) bool {
 		return true
 	})
 
-	if replicateCount > len(cfg.ClusterMembers)/2 {
+	if replicateCount > len(cfg.Peers)/2 {
 		atomic.StoreInt64(&raft.CommitIndex, log.Index)
 		return true
 	}
@@ -84,9 +84,9 @@ func (raft *Raft) sendLogEntries() {
 
 	cfg := infrastructure.CfgInstance
 	var wg sync.WaitGroup
-	wg.Add(len(cfg.ClusterMembers))
+	wg.Add(len(cfg.Peers))
 
-	for _, node := range cfg.ClusterMembers {
+	for _, node := range cfg.Peers {
 		go func(node infrastructure.ClusterMember) {
 			request := &rpcProto.AppendEntriesReq{}
 			request.Term = int64(raft.CurrentTerm)
